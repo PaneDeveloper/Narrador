@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Narrador</title>
+    <title>Leitor de Tela</title>
+    <link rel="manifest" href="manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,7 +50,7 @@
 
         <!-- Título e descrição -->
         <div class="text-center">
-            <h1 class="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-2">Narrador de Texto - TTS</h1>
+            <h1 class="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-2">Leitor de Tela</h1>
             <p class="text-gray-600 dark:text-gray-300">Cole um texto abaixo e o aplicativo irá ler em voz alta para você.</p>
         </div>
 
@@ -217,64 +218,11 @@
         } else if (savedTheme === 'light') {
             disableDarkMode();
         }
-        
+
         // PWA functionality
-        const pwaManifest = {
-            "name": "Leitor de Tela",
-            "short_name": "Leitor",
-            "description": "Um aplicativo de leitura de tela para converter texto em fala.",
-            "start_url": "./",
-            "display": "standalone",
-            "background_color": "#ffffff",
-            "theme_color": "#3b82f6",
-            "icons": [{
-                "src": "https://placehold.co/192x192/000000/FFFFFF?text=L",
-                "sizes": "192x192",
-                "type": "image/png"
-            }, {
-                "src": "https://placehold.co/512x512/000000/FFFFFF?text=L",
-                "sizes": "512x512",
-                "type": "image/png"
-            }]
-        };
-        const pwaServiceWorker = `
-            const CACHE_NAME = 'leitor-de-tela-cache-v1';
-            const urlsToCache = [
-                '/',
-                'index.html',
-                'https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap',
-                'https://fonts.gstatic.com',
-                'https://cdn.tailwindcss.com'
-            ];
-
-            self.addEventListener('install', (event) => {
-                event.waitUntil(
-                    caches.open(CACHE_NAME)
-                        .then((cache) => {
-                            return cache.addAll(urlsToCache);
-                        })
-                );
-            });
-
-            self.addEventListener('fetch', (event) => {
-                event.respondWith(
-                    caches.match(event.request)
-                        .then((response) => {
-                            if (response) {
-                                return response;
-                            }
-                            return fetch(event.request);
-                        })
-                );
-            });
-        `;
-        
-        const blob = new Blob([pwaServiceWorker], { type: 'application/javascript' });
-        const serviceWorkerUrl = URL.createObjectURL(blob);
-
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register(serviceWorkerUrl)
+                navigator.serviceWorker.register('service-worker.js')
                     .then(registration => {
                         console.log('Service Worker registrado com sucesso:', registration.scope);
                     })
@@ -284,11 +232,6 @@
             });
         }
         
-        const linkManifest = document.createElement('link');
-        linkManifest.rel = 'manifest';
-        linkManifest.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(pwaManifest));
-        document.head.appendChild(linkManifest);
-
         populateVoiceList();
 
         // Adiciona um listener para atualizar o valor do slider de velocidade
