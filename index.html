@@ -118,6 +118,8 @@ margin-top:10px;
 <textarea id="text" placeholder="Escreva aqui para o servidor narrar..."></textarea>
 
 <div class="controls">
+<label>
+</label>
 <label>Voz do Dispositivo:</label>
 <select id="voice">
 <option>A carregar vozes...</option>
@@ -128,6 +130,13 @@ margin-top:10px;
 
 <label>Tom</label>
 <input type="range" id="pitch" min="0" max="2" step="0.1" value="1">
+</div>
+
+<!-- Botão para ativar ou desativar Google TTS (gTTS Web). Quando desligado, usa apenas as vozes locais do dispositivo -->
+<div style="margin-bottom:10px; font-size:12px;">
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+<input type="checkbox" id="usarGTTS"> Usar Google TTS (voz da web)
+</label>
 </div>
 
 <button class="btn btn-play" onclick="falar()">FALAR (LOCAL)</button>
@@ -166,6 +175,9 @@ if(vozesDisponiveis.length>0 && vozesDisponiveis.length!==vozes.length){
 vozes = vozesDisponiveis
 vSelect.innerHTML=""
 
+// LISTA TODAS AS VOZES DO DISPOSITIVO (todas as línguas)
+// NÃO filtra idioma de propósito, para mostrar todas as vozes instaladas
+// no sistema: português, inglês, japonês, coreano, etc.
 for(var i=0;i<vozes.length;i++){
 
 var opt=document.createElement("option")
@@ -204,14 +216,42 @@ setInterval(carregarVozes,10000)
 function falar(){
 
 var txt=document.getElementById("text").value.trim()
+var usarGtts=document.getElementById("usarGtts").checked
 
 if(!txt){
-statusTxt.innerText="Escreva algo primeiro"
+statusTxt.innerText=traduzir("write_first")
 return
 }
 
+// se Google TTS estiver ativo e texto pequeno
+if(usarGtts && txt.length<=200){
+
+var url="https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl="+idiomaBase()+"&q="+encodeURIComponent(txt)
+
+var audio=new Audio(url)
+
+audio.onplay=function(){statusTxt.innerText=traduzir("speaking_web")}
+audio.onerror=function(){
+statusTxt.innerText=traduzir("web_error")
+falarLocal(txt)
+}
+
+audio.play().catch(function(){
+falarLocal(txt)
+})
+
+return
+}
+
+// fallback local
+falarLocal(txt)
+
+}
+
+function falarLocal(txt){
+
 if(vozes.length===0){
-statusTxt.innerText="Aguarde... vozes ainda a carregar"
+statusTxt.innerText=traduzir("voices_loading")
 carregarVozes()
 return
 }
@@ -230,11 +270,13 @@ msg.lang=vozes[vIndex].lang
 msg.rate=document.getElementById("rate").value
 msg.pitch=document.getElementById("pitch").value
 
-msg.onstart=function(){statusTxt.innerText="A falar..."}
-msg.onend=function(){statusTxt.innerText="Pronto."}
-msg.onerror=function(){statusTxt.innerText="Erro na fala local"}
+msg.onstart=function(){statusTxt.innerText=traduzir("speaking_local")}
+msg.onend=function(){statusTxt.innerText=traduzir("done")}
+msg.onerror=function(){statusTxt.innerText=traduzir("local_error")}
 
 synth.speak(msg)
+
+}
 
 }
 
@@ -287,6 +329,49 @@ a.click()
 document.body.removeChild(a)
 
 statusTxt.innerText="Download iniciado"
+}
+
+function idiomaBase(){
+var lang=(navigator.language||"pt-BR").toLowerCase()
+if(lang.indexOf("pt")==0) return "pt"
+if(lang.indexOf("es")==0) return "es"
+return "en"
+}
+
+function traduzir(chave){
+var lang=idiomaBase()
+
+var textos={
+pt:{
+write_first:"Escreva algo primeiro",
+speaking_web:"A falar (Google TTS)...",
+speaking_local:"A falar (voz do dispositivo)...",
+voices_loading:"Aguarde... vozes ainda a carregar",
+done:"Pronto.",
+web_error:"Erro no Google TTS, usando voz local",
+local_error:"Erro na fala local"
+},
+es:{
+write_first:"Escribe algo primero",
+speaking_web:"Hablando (Google TTS)...",
+speaking_local:"Hablando (voz del dispositivo)...",
+voices_loading:"Esperando voces del sistema",
+done:"Listo",
+web_error:"Error en Google TTS, usando voz local",
+local_error:"Error de voz local"
+},
+en:{
+write_first:"Write something first",
+speaking_web:"Speaking (Google TTS)...",
+speaking_local:"Speaking (device voice)...",
+voices_loading:"Waiting for voices",
+done:"Done",
+web_error:"Google TTS error, using device voice",
+local_error:"Local speech error"
+}
+}
+
+return textos[lang][chave]||textos.pt[chave]
 }
 
 window.onload=function(){
