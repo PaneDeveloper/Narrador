@@ -19,7 +19,7 @@ button{padding:10px;margin-top:10px;margin-right:5px;font-size:16px;border:none;
 <body>
 <div class="container">
 <h2>Narrador de Texto</h2>
-<textarea id="text" placeholder="Digite ou cole o texto aqui..." oninput="checkSave()"></textarea>
+<textarea id="text" placeholder="Digite alguns Caracteres aqui pra narrar <3" oninput="checkSave()"></textarea>
 <label>Voz</label>
 <select id="voice"></select>
 <label>Velocidade</label>
@@ -35,22 +35,117 @@ button{padding:10px;margin-top:10px;margin-right:5px;font-size:16px;border:none;
 <script>
 let synth = window.speechSynthesis
 let voices = []
-function status(msg){document.getElementById("status").innerText = msg}
-function loadVoices(){voices = synth.getVoices();let select = document.getElementById("voice");select.innerHTML="";voices.forEach((v,i)=>{if(v.lang.startsWith("pt")){let option=document.createElement("option");option.value=i;option.text=v.name+" ("+v.lang+")";select.appendChild(option)}})}
-if(synth){loadVoices();speechSynthesis.onvoiceschanged = loadVoices}
-function speakDevice(text){let utter = new SpeechSynthesisUtterance(text);let v = document.getElementById("voice").value;if(voices[v]) utter.voice = voices[v];utter.rate = document.getElementById("rate").value;utter.pitch = document.getElementById("pitch").value;synth.speak(utter);status("Narrador do dispositivo")}
-function speak(){let text = document.getElementById("text").value.trim();if(text===""){let aviso="Por favor, escreva algumas palavras na Caixa de Texto";speakDevice(aviso);return}
-if(text.length>200){status("Texto grande. Usando narrador do dispositivo");speakDevice(text);return}
-let url="https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=pt&q="+encodeURIComponent(text)
-let audio=new Audio(url)
-audio.onerror=function(){status("Erro no Google TTS ou no dispositivo");speakDevice(text)}
-audio.play().catch(function(){status("Erro no Google TTS")})
-status("Google TTS")}
-function stopSpeak(){if(synth) synth.cancel();status("Parado")}
-function checkSave(){let text=document.getElementById("text").value.trim();document.getElementById("saveBtn").disabled = !(text && text.length<=200)}
-function saveAudio(){let text=document.getElementById("text").value.trim();if(!text || text.length>200){status("Para salvar o áudio o texto precisa ter até 200 caracteres");return}
-let url="https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=pt&q="+encodeURIComponent(text)
-let a=document.createElement("a");a.href=url;a.download="narracao.mp3";document.body.appendChild(a);a.click();document.body.removeChild(a);status("Download iniciado")}
+
+function status(msg){
+ document.getElementById("status").innerText = msg
+}
+
+function loadVoices(){
+ if(!window.speechSynthesis) return
+
+ voices = speechSynthesis.getVoices()
+ const select = document.getElementById("voice")
+
+ select.innerHTML = ""
+
+ // se não vier voz ainda
+ if(voices.length === 0){
+  setTimeout(loadVoices,200)
+  return
+ }
+
+ voices.forEach((v,i)=>{
+  const option = document.createElement("option")
+  option.value = i
+  option.text = v.name + " (" + v.lang + ")"
+  select.appendChild(option)
+ })
+}
+
+// alguns navegadores só carregam vozes depois
+if('speechSynthesis' in window){
+ loadVoices()
+ speechSynthesis.onvoiceschanged = loadVoices
+}
+
+function speakDevice(text){
+ const utter = new SpeechSynthesisUtterance(text)
+
+ const v = document.getElementById("voice").value
+ if(voices[v]) utter.voice = voices[v]
+
+ utter.rate = document.getElementById("rate").value
+ utter.pitch = document.getElementById("pitch").value
+
+ synth.cancel()
+ synth.speak(utter)
+
+ status("Narrador do dispositivo")
+}
+
+function speak(){
+ const text = document.getElementById("text").value.trim()
+
+ if(text === ""){
+  const aviso = "Por favor, escreva algumas palavras na Caixa de Texto"
+  speakDevice(aviso)
+  return
+ }
+
+ // texto grande
+ if(text.length > 200){
+  status("Texto grande. Usando narrador do dispositivo")
+  speakDevice(text)
+  return
+ }
+
+ const url = "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=pt&q=" + encodeURIComponent(text)
+
+ const audio = new Audio(url)
+
+ audio.onerror = function(){
+  status("Erro no Google TTS. Mudando para narrador do dispositivo")
+  speakDevice(text)
+ }
+
+ audio.play().catch(()=>{
+  status("Erro no Google TTS. Mudando para narrador do dispositivo")
+  speakDevice(text)
+ })
+
+ status("Google TTS")
+}
+
+function stopSpeak(){
+ if(synth) synth.cancel()
+ status("Parado")
+}
+
+function checkSave(){
+ const text = document.getElementById("text").value.trim()
+ document.getElementById("saveBtn").disabled = !(text && text.length <= 200)
+}
+
+function saveAudio(){
+ const text = document.getElementById("text").value.trim()
+
+ if(!text || text.length > 200){
+  status("Para salvar o áudio o texto precisa ter até 200 caracteres")
+  return
+ }
+
+ const url = "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=pt&q=" + encodeURIComponent(text)
+
+ const a = document.createElement("a")
+ a.href = url
+ a.download = "narracao.mp3"
+
+ document.body.appendChild(a)
+ a.click()
+ document.body.removeChild(a)
+
+ status("Download iniciado")
+}
 </script>
 </body>
 </html>
