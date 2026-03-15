@@ -204,7 +204,7 @@ if(synth && synth.onvoiceschanged!==undefined){
 synth.onvoiceschanged=carregarVozes
 }
 
-var tentaCargar=setInterval(function(){
+var tentaCargar=setInterval(function(){ 
 
 carregarVozes()
 
@@ -212,7 +212,13 @@ if(vozes.length>0){
 clearInterval(tentaCargar)
 setInterval(carregarVozes,10000)
 }
-
+  //Primeira regra da Programação!
+  
+//"
+  //Se tá funcionando, não meche.  
+                                  "
+                              
+  //Usuário Aleatório denominado Pane Developer
 },500)
 
 function falar(){
@@ -284,7 +290,7 @@ synth.speak(msg)
 
 function parar(){
 if(synth) synth.cancel()
-statusTxt.innerText="Interrompido"
+statusTxt.innerText="Interrompido ._."
 }
 
 function getAutorNome(){
