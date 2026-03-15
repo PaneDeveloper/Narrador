@@ -95,25 +95,6 @@ function status(msg){
 document.getElementById("status").innerText = msg;
 }
 
-function getDeviceType(){
-
-var ua=navigator.userAgent.toLowerCase();
-
-if(ua.indexOf("android")!=-1 || ua.indexOf("iphone")!=-1){
-return "celular";
-}
-
-if(ua.indexOf("ipad")!=-1 || ua.indexOf("tablet")!=-1){
-return "tablet";
-}
-
-if(ua.indexOf("smarttv")!=-1 || ua.indexOf("googletv")!=-1){
-return "tv";
-}
-
-return "pc";
-}
-
 function loadVoices(){
 
 if(!synth) return;
@@ -164,17 +145,17 @@ utter.voice=voices[select.value];
 utter.rate=document.getElementById("rate").value;
 utter.pitch=document.getElementById("pitch").value;
 
-speechSynthesis.speak(utter);
+synth.speak(utter);
 
-status("Usando narrador do dispositivo.");
+status("Lendo com narrador do dispositivo.");
 
 }
 
 function speak(){
 
-var text=document.getElementById("text").value;
+var text=document.getElementById("text").value.trim();
 
-if(text.trim()==""){
+if(text===""){
 
 var aviso="Por favor, escreva algumas palavras na Caixa de Texto.";
 
@@ -185,37 +166,42 @@ speakDevice(aviso);
 return;
 }
 
+if(text.length>200){
+
+status("Texto longo detectado. Usando narrador do dispositivo.");
+
+speakDevice(text);
+
+return;
+}
+
 var url="https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=pt&q="+encodeURIComponent(text);
 
-var audio=new Audio(url);
+var audio=new Audio();
+audio.src=url;
 
 audio.onerror=function(){
 
-var erro="Erro no Google TTS ou no seu "+getDeviceType()+". Mudando para o narrador do dispositivo.";
+status("Erro no Google TTS. Mudando para o narrador do dispositivo.");
 
-status(erro);
-
-if("speechSynthesis" in window){
-
-var avisoVoice=new SpeechSynthesisUtterance(erro);
-
-avisoVoice.onend=function(){
 speakDevice(text);
-};
-
-speechSynthesis.speak(avisoVoice);
-
-}
 
 };
 
 audio.onended=function(){
+
 status("Leitura concluída.");
+
 };
 
-audio.play();
+audio.play().catch(function(){
 
-// ahhahahah,, nada de tailwind css :3
+status("Erro ao tocar Google TTS. Usando narrador do dispositivo.");
+
+speakDevice(text);
+
+});
+
 status("Lendo com Google TTS.");
 
 }
@@ -223,7 +209,7 @@ status("Lendo com Google TTS.");
 function stopSpeak(){
 
 if("speechSynthesis" in window){
-speechSynthesis.cancel();
+synth.cancel();
 }
 
 status("Leitura parada.");
@@ -234,4 +220,3 @@ status("Leitura parada.");
 
 </body>
 </html>
- 
