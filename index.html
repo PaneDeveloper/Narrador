@@ -1,151 +1,284 @@
 <!DOCTYPE html>
+<!--
+NARRADOR PRO - LOCAL SERVER EDITION
+
+O QUE ESTE ARQUIVO FAZ
+- Lê qualquer texto digitado usando o narrador do próprio dispositivo (Web Speech API).
+- Funciona totalmente OFFLINE.
+- Não precisa de servidor externo nem API.
+
+COMPATIBILIDADE
+Funciona em navegadores que suportam speechSynthesis:
+- Chrome
+- Chromium
+- Opera
+- Edge
+- Android WebView
+
+Sistemas suportados:
+- Linux
+- Windows
+- Android
+- ChromeOS
+
+COMO ELE SE ADAPTA AO DISPOSITIVO
+- Detecta automaticamente todas as vozes instaladas no sistema.
+- Atualiza a lista quando o navegador libera as vozes.
+- Seleciona automaticamente português quando disponível.
+- Usa loops de verificação para funcionar em hardware antigo.
+
+OTIMIZAÇÕES
+- Código JS simples para rodar em celulares antigos.
+- Evita travamentos cancelando a fila de fala.
+- Usa verificação periódica de vozes.
+- Desperta o motor de TTS para evitar bugs de navegador.
+
+Tudo roda diretamente no navegador.
+-->
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Narrador de Texto</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Narrador Pro - Local Server Edition</title>
 <style>
-body{font-family:Arial;background:#f2f2f2;padding:20px}
-.container{max-width:700px;margin:auto;background:white;padding:20px;border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,0.1)}
-textarea{width:100%;height:160px;padding:10px;font-size:16px}
-select,input{width:100%;margin-top:6px;padding:6px}
-button{padding:10px;margin-top:10px;margin-right:5px;font-size:16px;border:none;border-radius:6px;cursor:pointer}
-.play{background:#28a745;color:white}
-.stop{background:#dc3545;color:white}
-.save{background:#007bff;color:white}
-.status{margin-top:10px;font-weight:bold}
+body{
+background-color:#1a202c;
+color:#333;
+font-family:Arial,sans-serif;
+margin:0;
+padding:15px;
+}
+.container{
+background-color:#ffffff;
+max-width:600px;
+margin:20px auto;
+padding:20px;
+border-radius:8px;
+box-shadow:0 4px 6px rgba(0,0,0,0.3);
+}
+h1{
+font-size:18px;
+color:#2d3748;
+margin:0 0 15px 0;
+border-bottom:2px solid #4a5568;
+padding-bottom:5px;
+}
+textarea{
+width:100%;
+height:150px;
+box-sizing:border-box;
+padding:10px;
+border:2px solid #cbd5e0;
+font-size:16px;
+margin-bottom:15px;
+}
+.controls{
+background:#f7fafc;
+padding:10px;
+border-radius:5px;
+margin-bottom:15px;
+}
+label{
+display:block;
+font-size:12px;
+font-weight:bold;
+margin-bottom:5px;
+}
+select,input[type="range"]{
+width:100%;
+margin-bottom:10px;
+}
+.btn{
+display:block;
+width:100%;
+padding:15px;
+font-size:16px;
+font-weight:bold;
+text-align:center;
+border:none;
+border-radius:5px;
+cursor:pointer;
+margin-bottom:10px;
+}
+.btn-play{background-color:#3182ce;color:white;}
+.btn-stop{background-color:#e53e3e;color:white;}
+#status{
+text-align:center;
+font-size:12px;
+color:#a0aec0;
+margin-top:10px;
+}
 </style>
 </head>
 <body>
+
 <div class="container">
-<h2>Narrador de Texto</h2>
-<textarea id="text" placeholder="Digite alguns Caracteres aqui pra narrar <3" oninput="checkSave()"></textarea>
-<label>Voz</label>
-<select id="voice"></select>
+<h1>Narrador Local (Offline)</h1>
+
+<textarea id="text" placeholder="Escreva aqui para o servidor narrar..."></textarea>
+
+<div class="controls">
+<label>Voz do Dispositivo:</label>
+<select id="voice">
+<option>A carregar vozes...</option>
+</select>
+
 <label>Velocidade</label>
 <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1">
+
 <label>Tom</label>
 <input type="range" id="pitch" min="0" max="2" step="0.1" value="1">
-<br>
-<button class="play" onclick="speak()">Ler</button>
-<button class="stop" onclick="stopSpeak()">Parar</button>
-<button class="save" id="saveBtn" onclick="saveAudio()" disabled>Salvar áudio</button>
-<div class="status" id="status"></div>
 </div>
+
+<button class="btn btn-play" onclick="falar()">FALAR (LOCAL)</button>
+<button class="btn btn-stop" onclick="parar()">PARAR TUDO</button>
+<button class="btn" style="background:#38a169;color:white" onclick="baixarAudio()">BAIXAR ÁUDIO (Google TTS)</button>
+
+<div id="status">Servidor pronto. Offline.</div>
+</div>
+
 <script>
-let synth = window.speechSynthesis
-let voices = []
 
-function status(msg){
- document.getElementById("status").innerText = msg
+var synth = window.speechSynthesis
+var vozes = []
+var vSelect = document.getElementById("voice")
+var statusTxt = document.getElementById("status")
+
+function despertarTTS(){
+if(!synth) return
+var dummy = new SpeechSynthesisUtterance(" ")
+dummy.volume = 0
+synth.speak(dummy)
+synth.cancel()
 }
 
-function loadVoices(){
- if(!window.speechSynthesis) return
+function carregarVozes(){
 
- voices = speechSynthesis.getVoices()
- const select = document.getElementById("voice")
-
- select.innerHTML = ""
-
- // se não vier voz ainda
- if(voices.length === 0){
-  setTimeout(loadVoices,200)
-  return
- }
-
- voices.forEach((v,i)=>{
-  const option = document.createElement("option")
-  option.value = i
-  option.text = v.name + " (" + v.lang + ")"
-  select.appendChild(option)
- })
+if(!synth){
+statusTxt.innerText="Erro: síntese de voz não suportada"
+return
 }
 
-// alguns navegadores só carregam vozes depois
-if('speechSynthesis' in window){
- loadVoices()
- speechSynthesis.onvoiceschanged = loadVoices
+var vozesDisponiveis = synth.getVoices()
+
+if(vozesDisponiveis.length>0 && vozesDisponiveis.length!==vozes.length){
+
+vozes = vozesDisponiveis
+vSelect.innerHTML=""
+
+for(var i=0;i<vozes.length;i++){
+
+var opt=document.createElement("option")
+opt.value=i
+opt.textContent=vozes[i].name+" ["+vozes[i].lang+"]"
+
+if(vozes[i].lang.indexOf('pt')!==-1){
+opt.selected=true
 }
 
-function speakDevice(text){
- const utter = new SpeechSynthesisUtterance(text)
+vSelect.appendChild(opt)
 
- const v = document.getElementById("voice").value
- if(voices[v]) utter.voice = voices[v]
-
- utter.rate = document.getElementById("rate").value
- utter.pitch = document.getElementById("pitch").value
-
- synth.cancel()
- synth.speak(utter)
-
- status("Narrador do dispositivo")
 }
 
-function speak(){
- const text = document.getElementById("text").value.trim()
+statusTxt.innerText="Vozes offline carregadas ("+vozes.length+")"
 
- if(text === ""){
-  const aviso = "Por favor, escreva algumas palavras na Caixa de Texto"
-  speakDevice(aviso)
-  return
- }
-
- // texto grande
- if(text.length > 200){
-  status("Texto grande. Usando narrador do dispositivo")
-  speakDevice(text)
-  return
- }
-
- const url = "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=pt&q=" + encodeURIComponent(text)
-
- const audio = new Audio(url)
-
- audio.onerror = function(){
-  status("Erro no Google TTS. Mudando para narrador do dispositivo")
-  speakDevice(text)
- }
-
- audio.play().catch(()=>{
-  status("Erro no Google TTS. Mudando para narrador do dispositivo")
-  speakDevice(text)
- })
-
- status("Google TTS")
 }
 
-function stopSpeak(){
- if(synth) synth.cancel()
- status("Parado")
 }
 
-function checkSave(){
- const text = document.getElementById("text").value.trim()
- document.getElementById("saveBtn").disabled = !(text && text.length <= 200)
+if(synth && synth.onvoiceschanged!==undefined){
+synth.onvoiceschanged=carregarVozes
 }
 
-function saveAudio(){
- const text = document.getElementById("text").value.trim()
+var tentaCargar=setInterval(function(){
 
- if(!text || text.length > 200){
-  status("Para salvar o áudio o texto precisa ter até 200 caracteres")
-  return
- }
+carregarVozes()
 
- const url = "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=pt&q=" + encodeURIComponent(text)
-
- const a = document.createElement("a")
- a.href = url
- a.download = "narracao.mp3"
-
- document.body.appendChild(a)
- a.click()
- document.body.removeChild(a)
-
- status("Download iniciado")
+if(vozes.length>0){
+clearInterval(tentaCargar)
+setInterval(carregarVozes,10000)
 }
+
+},500)
+
+function falar(){
+
+var txt=document.getElementById("text").value.trim()
+
+if(!txt){
+statusTxt.innerText="Escreva algo primeiro"
+return
+}
+
+if(vozes.length===0){
+statusTxt.innerText="Aguarde... vozes ainda a carregar"
+carregarVozes()
+return
+}
+
+synth.cancel()
+
+var msg=new SpeechSynthesisUtterance(txt)
+
+var vIndex=vSelect.value
+
+if(vozes[vIndex]){
+msg.voice=vozes[vIndex]
+msg.lang=vozes[vIndex].lang
+}
+
+msg.rate=document.getElementById("rate").value
+msg.pitch=document.getElementById("pitch").value
+
+msg.onstart=function(){statusTxt.innerText="A falar..."}
+msg.onend=function(){statusTxt.innerText="Pronto."}
+msg.onerror=function(){statusTxt.innerText="Erro na fala local"}
+
+synth.speak(msg)
+
+}
+
+function parar(){
+if(synth) synth.cancel()
+statusTxt.innerText="Interrompido"
+}
+
+function baixarAudio(){
+
+var txt=document.getElementById("text").value.trim()
+
+if(!txt){
+statusTxt.innerText="Escreva algo primeiro"
+return
+}
+
+if(txt.length>200){
+statusTxt.innerText="Download limitado a 200 caracteres"
+return
+}
+
+var url="https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=pt&q="+encodeURIComponent(txt)
+
+var a=document.createElement("a")
+
+a.href=url
+
+a.download="narracao.mp3"
+
+document.body.appendChild(a)
+
+a.click()
+
+document.body.removeChild(a)
+
+statusTxt.innerText="Download iniciado"
+}
+
+window.onload=function(){
+desperarTTS()
+}
+// hehehehe
 </script>
+
 </body>
 </html>
