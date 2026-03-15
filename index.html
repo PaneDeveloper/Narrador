@@ -1,249 +1,237 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Narrador de Texto - TTS</title>
-    <link rel="manifest" href="manifest.json">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            transition: background-color 0.3s, color 0.3s;
-        }
-        .container {
-            max-width: 800px;
-        }
-        .dark .container {
-            background-color: #2d3748;
-            color: #e2e8f0;
-        }
-        .dark h1, .dark p, .dark label, .dark button, .dark textarea {
-            color: #e2e8f0;
-        }
-        .dark textarea, .dark select {
-            background-color: #4a5568;
-            border-color: #4a5568;
-            color: #e2e8f0;
-        }
-        .dark .dark-mode-toggle {
-            background-color: #2d3748;
-            border-color: #4a5568;
-            color: #e2e8f0;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Narrador de Texto</title>
+
+<style>
+body{
+font-family: Arial, sans-serif;
+background:#f2f2f2;
+margin:0;
+padding:20px;
+}
+
+.container{
+max-width:700px;
+margin:auto;
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+
+textarea{
+width:100%;
+height:160px;
+padding:10px;
+font-size:16px;
+}
+
+select,input{
+width:100%;
+padding:8px;
+margin-top:5px;
+}
+
+button{
+padding:10px;
+margin-top:10px;
+width:48%;
+font-size:16px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+
+.play{background:#28a745;color:white;}
+.stop{background:#dc3545;color:white;}
+
+.status{
+margin-top:10px;
+font-weight:bold;
+}
+
+.controls{
+display:flex;
+justify-content:space-between;
+}
+</style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 flex items-center justify-center min-h-screen p-4 transition-colors duration-500">
 
-    <!-- Card principal do aplicativo -->
-    <div class="container bg-white shadow-xl rounded-2xl p-8 space-y-8 dark:bg-gray-800 transition-colors duration-500 relative">
-        
-        <!-- Botão de alternância do modo escuro -->
-        <button id="dark-mode-toggle" class="absolute top-4 right-4 p-2 rounded-full shadow-md bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-            </svg>
-        </button>
+<body>
 
-        <!-- Título e descrição -->
-        <div class="text-center">
-            <h1 class="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-2">Narrador de Texto - TTS</h1>
-            <p class="text-gray-600 dark:text-gray-300">Um aplicativo de Narração de Textos para converter texto em fala.</p>
-        </div>
+<div class="container">
 
-        <!-- Área de texto para o usuário -->
-        <textarea id="text-to-read"
-            class="w-full h-48 p-4 text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
-            placeholder="Cole seu texto aqui..."></textarea>
+<h2>Narrador de Texto</h2>
 
-        <!-- Opções de voz -->
-        <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-            <div class="w-full sm:w-auto">
-                <label for="voice-select" class="block text-gray-700 dark:text-gray-300 font-medium mb-1">Escolha a Voz:</label>
-                <select id="voice-select" class="w-full p-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"></select>
-            </div>
-            <div class="w-full sm:w-auto">
-                <label for="rate-range" class="block text-gray-700 dark:text-gray-300 font-medium mb-1">Velocidade: <span id="rate-value" class="font-bold">1.0</span></label>
-                <input type="range" id="rate-range" min="0.5" max="2" value="1" step="0.1" class="w-full">
-            </div>
-            <div class="w-full sm:w-auto">
-                <label for="pitch-range" class="block text-gray-700 dark:text-gray-300 font-medium mb-1">Tom: <span id="pitch-value" class="font-bold">1.0</span></label>
-                <input type="range" id="pitch-range" min="0" max="2" value="1" step="0.1" class="w-full">
-            </div>
-        </div>
+<textarea id="text" placeholder="Digite ou cole seu texto aqui..."></textarea>
 
-        <!-- Botões de controle -->
-        <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-            <button id="play-button"
-                class="flex-1 bg-green-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-300">
-                Ler Texto
-            </button>
-            <button id="stop-button"
-                class="flex-1 bg-red-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-300">
-                Parar
-            </button>
-        </div>
+<label>Voz</label>
+<select id="voice"></select>
 
-        <!-- Mensagens de status -->
-        <div id="status-message" class="text-center text-gray-700 dark:text-gray-300 font-medium"></div>
-    </div>
+<label>Velocidade</label>
+<input type="range" id="rate" min="0.5" max="2" step="0.1" value="1">
 
-    <!-- Script JavaScript para a funcionalidade -->
-    <script>
-        const playButton = document.getElementById('play-button');
-        const stopButton = document.getElementById('stop-button');
-        const textArea = document.getElementById('text-to-read');
-        const statusMessage = document.getElementById('status-message');
-        const voiceSelect = document.getElementById('voice-select');
-        const rateRange = document.getElementById('rate-range');
-        const pitchRange = document.getElementById('pitch-range');
-        const darkModeToggle = document.getElementById('dark-mode-toggle');
-        const rateValueDisplay = document.getElementById('rate-value');
-        const pitchValueDisplay = document.getElementById('pitch-value');
+<label>Tom</label>
+<input type="range" id="pitch" min="0" max="2" step="0.1" value="1">
 
-        let synth = window.speechSynthesis;
-        let utterance = null;
-        let voices = [];
+<div class="controls">
+<button class="play" onclick="speak()">Ler</button>
+<button class="stop" onclick="stopSpeak()">Parar</button>
+</div>
 
-        function updateStatus(message) {
-            statusMessage.textContent = message;
-        }
+<div class="status" id="status"></div>
 
-        function populateVoiceList() {
-            voices = synth.getVoices().filter(voice => voice.lang.startsWith('pt'));
-            for (let i = 0; i < voices.length; i++) {
-                const option = document.createElement('option');
-                option.textContent = voices[i].name + ' (' + voices[i].lang + ')';
-                option.value = voices[i].name;
-                voiceSelect.appendChild(option);
-            }
-        }
+</div>
 
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = populateVoiceList;
-        }
+<script>
 
-        function getDeviceType() {
-            const userAgent = navigator.userAgent.toLowerCase();
-            if (userAgent.includes("android") || userAgent.includes("iphone") || userAgent.includes("ios")) {
-                return "seu telefone";
-            } else if (userAgent.includes("tablet") || userAgent.includes("ipad")) {
-                return "seu Tablet";
-            } else if (userAgent.includes("smarttv") || userAgent.includes("googletv") || userAgent.includes("appletv")) {
-                return "sua TV";
-            } else if (userAgent.includes("watch")) {
-                return "seu Relógio";
-            }
-            return "seu PC";
-        }
+var synth = window.speechSynthesis;
+var voices = [];
 
-        function speakText(text) {
-            if (synth.speaking) {
-                updateStatus('Já estou lendo. Por favor, espere ou clique em Parar.');
-                return;
-            }
+function status(msg){
+document.getElementById("status").innerText = msg;
+}
 
-            if (text.trim() === '') {
-                updateStatus(`Por favor, cole um texto para que ${getDeviceType()} possa ler.`);
-                return;
-            }
+function getDeviceType(){
 
-            utterance = new SpeechSynthesisUtterance(text);
-            const selectedVoice = voices.find(voice => voice.name === voiceSelect.value);
-            if (selectedVoice) {
-                utterance.voice = selectedVoice;
-            } else {
-                utterance.lang = 'pt-BR';
-            }
-            
-            utterance.rate = rateRange.value;
-            utterance.pitch = pitchRange.value;
+var ua=navigator.userAgent.toLowerCase();
 
-            utterance.onend = () => {
-                updateStatus('Leitura concluída! :D');
-            };
+if(ua.indexOf("android")!=-1 || ua.indexOf("iphone")!=-1){
+return "celular";
+}
 
-            utterance.onerror = (event) => {
-                console.error('Erro na leitura:', event.error);
-                updateStatus('Ocorreu um erro ao tentar ler o texto.');
-            };
+if(ua.indexOf("ipad")!=-1 || ua.indexOf("tablet")!=-1){
+return "tablet";
+}
 
-            synth.speak(utterance);
-            updateStatus('Lendo...');
-        }
+if(ua.indexOf("smarttv")!=-1 || ua.indexOf("googletv")!=-1){
+return "tv";
+}
 
-        function stopSpeaking() {
-            if (synth.speaking) {
-                synth.cancel();
-            }
-            updateStatus('Leitura parada. ;-;');
-        }
+return "pc";
+}
 
-        playButton.addEventListener('click', () => {
-            speakText(textArea.value);
-        });
-        
-        stopButton.addEventListener('click', () => {
-            stopSpeaking();
-        });
-        
-        // Dark Mode Functionality
-        function enableDarkMode() {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-        }
+function loadVoices(){
 
-        function disableDarkMode() {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-        }
+if(!synth) return;
 
-        function toggleDarkMode() {
-            if (document.documentElement.classList.contains('dark')) {
-                disableDarkMode();
-            } else {
-                enableDarkMode();
-            }
-        }
+voices = synth.getVoices();
+var select = document.getElementById("voice");
 
-        darkModeToggle.addEventListener('click', toggleDarkMode);
+select.innerHTML="";
 
-        // Check for saved theme preference on page load
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') {
-            enableDarkMode();
-        } else if (savedTheme === 'light') {
-            disableDarkMode();
-        }
+for(var i=0;i<voices.length;i++){
 
-        // PWA functionality
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js')
-                    .then(registration => {
-                        console.log('Service Worker registrado com sucesso:', registration.scope);
-                    })
-                    .catch(error => {
-                        console.log('Falha no registro do Service Worker:', error);
-                    });
-            });
-        }
-        
-        populateVoiceList();
+if(voices[i].lang.indexOf("pt")===0){
 
-        // Adiciona um listener para atualizar o valor do slider de velocidade
-        rateRange.addEventListener('input', () => {
-            rateValueDisplay.textContent = parseFloat(rateRange.value).toFixed(1);
-        });
+var option=document.createElement("option");
+option.value=i;
+option.text=voices[i].name+" ("+voices[i].lang+")";
 
-        // Adiciona um listener para atualizar o valor do slider de tom
-        pitchRange.addEventListener('input', () => {
-            pitchValueDisplay.textContent = parseFloat(pitchRange.value).toFixed(1);
-        });
+select.appendChild(option);
 
-    </script>
+}
+
+}
+
+}
+
+if(synth){
+
+loadVoices();
+
+if(speechSynthesis.onvoiceschanged!==undefined){
+speechSynthesis.onvoiceschanged=loadVoices;
+}
+
+}
+
+function speakDevice(text){
+
+if(!("speechSynthesis" in window)) return;
+
+var utter=new SpeechSynthesisUtterance(text);
+
+var select=document.getElementById("voice");
+
+if(voices.length>0){
+utter.voice=voices[select.value];
+}
+
+utter.rate=document.getElementById("rate").value;
+utter.pitch=document.getElementById("pitch").value;
+
+speechSynthesis.speak(utter);
+
+status("Usando narrador do dispositivo.");
+
+}
+
+function speak(){
+
+var text=document.getElementById("text").value;
+
+if(text.trim()==""){
+
+var aviso="Por favor, escreva algumas palavras na Caixa de Texto.";
+
+status(aviso);
+
+speakDevice(aviso);
+
+return;
+}
+
+var url="https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=pt&q="+encodeURIComponent(text);
+
+var audio=new Audio(url);
+
+audio.onerror=function(){
+
+var erro="Erro no Google TTS ou no seu "+getDeviceType()+". Mudando para o narrador do dispositivo.";
+
+status(erro);
+
+if("speechSynthesis" in window){
+
+var avisoVoice=new SpeechSynthesisUtterance(erro);
+
+avisoVoice.onend=function(){
+speakDevice(text);
+};
+
+speechSynthesis.speak(avisoVoice);
+
+}
+
+};
+
+audio.onended=function(){
+status("Leitura concluída.");
+};
+
+audio.play();
+
+// ahhahahah,, nada de tailwind css :3
+status("Lendo com Google TTS.");
+
+}
+
+function stopSpeak(){
+
+if("speechSynthesis" in window){
+speechSynthesis.cancel();
+}
+
+status("Leitura parada.");
+
+}
+
+</script>
+
 </body>
 </html>
+ 
