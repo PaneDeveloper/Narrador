@@ -39,7 +39,7 @@ Tudo roda diretamente no navegador.
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Narrador Pro - Local Server Edition</title>
+<title>Narrador Pro - Local 'Server' Edition</title>
 <style>
 body{
 background-color:#1a202c;
@@ -119,10 +119,12 @@ margin-top:10px;
 
 <div class="controls">
 <label>
+<input type="checkbox" id="usarGtts" checked>
+Usar Google TTS (voz online)
 </label>
 <label>Voz do Dispositivo:</label>
 <select id="voice">
-<option>A carregar vozes...</option>
+<option>Carregando Vozes</option> <!-- A carregar vozes, aqui é BR na raça, hehehehehehe -->
 </select>
 
 <label>Velocidade</label>
@@ -143,7 +145,7 @@ margin-top:10px;
 <button class="btn btn-stop" onclick="parar()">PARAR TUDO</button>
 <button class="btn" style="background:#38a169;color:white" onclick="baixarAudio()">BAIXAR ÁUDIO (Google TTS)</button>
 
-<div id="status">Servidor pronto. Offline.</div>
+<div id="status">Engine Pronta. Offline.</div> <!-- Servidor é um browser, instalado no dispositivo de alguem por aí, e esse alguem, é uma pessoa provávelmente no computador vendo essa mensagem num código HTML de Narrador, que é um PWA, pelo aplicativo IDE denominado Microsoft Visual Studio Code, e, que é um usuário curioso :3 -->
 </div>
 
 <script>
@@ -192,7 +194,7 @@ vSelect.appendChild(opt)
 
 }
 
-statusTxt.innerText="Vozes offline carregadas ("+vozes.length+")"
+statusTxt.innerText="As Vozes Offline foram carregadas ("+vozes.length+")"
 
 }
 
@@ -301,7 +303,7 @@ function baixarAudio(){
 var txt=document.getElementById("text").value.trim()
 
 if(!txt){
-statusTxt.innerText="Escreva algo primeiro"
+statusTxt.innerText="Escreve algo aí parcero '-'"
 return
 }
 
@@ -370,12 +372,18 @@ web_error:"Google TTS error, using device voice",
 local_error:"Local speech error"
 }
 }
-
+// lembra daquela bagaça lá do inicio que mal funcionava?
+  // taí KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
+  // Funcionando, eu espero >:3
+  // te amo kkkk
+  // O Código é Open-Source, ou seja, código aberto, e é de Uso Livre :3
+  // Baixou é seu, tudo de boas.
+  // Feito por Pane Developer <3
 return textos[lang][chave]||textos.pt[chave]
 }
 
 window.onload=function(){
-desperarTTS()
+despertarTTS()
 }
 
 </script>
