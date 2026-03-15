@@ -243,6 +243,17 @@ if(synth) synth.cancel()
 statusTxt.innerText="Interrompido"
 }
 
+function getAutorNome(){
+
+var lang = (navigator.language || "pt").toLowerCase()
+
+if(lang.indexOf("pt")===0) return "Narrador TTS por Pane Developer"
+if(lang.indexOf("es")===0) return "Narrador TTS por Pane Developer"
+
+return "TTS Narrator by Pane Developer"
+
+}
+
 function baixarAudio(){
 
 var txt=document.getElementById("text").value.trim()
@@ -259,11 +270,15 @@ return
 
 var url="https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=pt&q="+encodeURIComponent(txt)
 
+var autor=getAutorNome()
+
+var nomeArquivo="TTS_Web - "+autor+".mp3"
+
 var a=document.createElement("a")
 
 a.href=url
 
-a.download="narracao.mp3"
+a.download=nomeArquivo
 
 document.body.appendChild(a)
 
@@ -277,7 +292,7 @@ statusTxt.innerText="Download iniciado"
 window.onload=function(){
 desperarTTS()
 }
-// hehehehe
+
 </script>
 
 </body>
