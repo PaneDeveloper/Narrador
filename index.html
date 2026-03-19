@@ -1,68 +1,26 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Narrador Pro - Android TTS Padrão</title>
-<style>
-body{background:#1a202c;color:#fff;font-family:Arial,sans-serif;margin:0;padding:15px;}
-.container{background:#2d3748;max-width:600px;margin:20px auto;padding:20px;border-radius:8px;box-shadow:0 4px 6px rgba(0,0,0,0.3);}
-h1{font-size:20px;margin-bottom:15px;border-bottom:2px solid #4a5568;padding-bottom:5px;}
-textarea{width:100%;height:150px;padding:10px;font-size:16px;margin-bottom:15px;border-radius:5px;border:none;resize:none;}
-.controls{background:#4a5568;padding:10px;border-radius:5px;margin-bottom:15px;}
-label{display:block;font-size:12px;font-weight:bold;margin-bottom:5px;}
-select,input[type=range]{width:100%;margin-bottom:10px;}
-.btn{display:block;width:100%;padding:15px;font-size:16px;font-weight:bold;text-align:center;border:none;border-radius:5px;cursor:pointer;margin-bottom:10px;}
-.btn-play{background:#3182ce;color:white;}
-.btn-stop{background:#e53e3e;color:white;}
-.btn-download{background:#38a169;color:white;}
-.btn-download.disabled{background:#000;cursor:not-allowed;}
-#status{text-align:center;font-size:12px;color:#a0aec0;margin-top:10px;}
-</style>
-</head>
-<body>
-<div class="container">
-<h1>Narrador Local (Android TTS Padrão)</h1>
-<textarea id="text" placeholder="Escreva algo para o narrador falar..."></textarea>
-
-<div class="controls">
-<!-- Checkbox para ativar Google TTS, opcional -->
-<label><input type="checkbox" id="usarGtts"> Usar Google TTS (opcional)</label>
-<!-- Seleção de vozes do dispositivo, padrão -->
-<label>Voz do dispositivo:</label>
-<select id="voice"><option>Carregando vozes...</option></select>
-<label>Velocidade</label>
-<input type="range" id="rate" min="0.5" max="2" step="0.1" value="1">
-<label>Tom</label>
-<input type="range" id="pitch" min="0" max="2" step="0.1" value="1">
-</div>
-
-<!-- Botões de ação -->
-<button class="btn btn-play" onclick="falar()">FALAR</button>
-<button class="btn btn-stop" onclick="parar()">PARAR</button>
-<!-- Download só ativo se houver internet -->
-<button id="btnDownload" class="btn btn-download" onclick="baixarAudio()">BAIXAR ÁUDIO</button>
-<div id="status">Engine pronta. Offline.</div>
-</div>
-
-<script>
-var synth = window.speechSynthesis;
-var vozes = [];
-var vSelect = document.getElementById("voice");
-var statusTxt = document.getElementById("status");
-var btnDownload = document.getElementById("btnDownload");
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Narrador de Texto '-'</title><style>body{background:#1a202c;color:#fff;font-family:Arial,sans-serif;margin:0;padding:15px;}.container{background:#2d3748;max-width:600px;margin:20px auto;padding:20px;border-radius:8px;box-shadow:0 4px 6px rgba(0,0,0,0.3);}h1{font-size:20px;margin-bottom:15px;border-bottom:2px solid #4a5568;padding-bottom:5px;}textarea{width:100%;height:150px;padding:10px;font-size:16px;margin-bottom:15px;border-radius:5px;border:none;resize:none;}.controls{background:#4a5568;padding:10px;border-radius:5px;margin-bottom:15px;}label{display:block;font-size:12px;font-weight:bold;margin-bottom:5px;}select,input[type=range]{width:100%;margin-bottom:10px;}.btn{display:block;width:100%;padding:15px;font-size:16px;font-weight:bold;text-align:center;border:none;border-radius:5px;cursor:pointer;margin-bottom:10px;}.btn-play{background:#3182ce;color:white;}.btn-stop{background:#e53e3e;color:white;}.btn-download{background:#38a169;color:white;}.btn-download.disabled{background:#000;cursor:not-allowed;}#status{text-align:center;font-size:12px;color:#a0aec0;margin-top:10px;}</style></head><body><div class="container"><h1>Narrador Local (Android TTS Padrão)</h1><textarea id="text" placeholder="Escreva algo para o narrador falar..."></textarea>
+<div class="controls"><!-- Checkbox para ativar Google TTS, opcional --><label><input type="checkbox" id="usarGtts"> Usar o Google TTS pra Download do Arquivo</label><!-- Seleção de vozes do dispositivo, padrão --><label>Voz do dispositivo:</label><select id="voice"><option>Carregando vozes...</option></select><label>Velocidade</label><input type="range" id="rate" min="0.5" max="2" step="0.1" value="1"><label>Tom</label><input type="range" id="pitch" min="0" max="2" step="0.1" value="1"></div>
+<!-- Botões de ação --><button class="btn btn-play" onclick="falar()">Falar</button><button class="btn btn-stop" onclick="parar()">Parar</button><!-- Download só ativo se houver internet --><button id="btnDownload" class="btn btn-download" onclick="baixarAudio()">Baixar Arquivo</button><div id="status">Iniciando...</div></div>
+<script>var synth = window.speechSynthesis;var vozes = [];var vSelect = document.getElementById("voice");var statusTxt = document.getElementById("status");var btnDownload = document.getElementById("btnDownload");
 
 // Despertar TTS para evitar bugs em browsers antigos
 function despertarTTS(){
     if(!synth) return;
-    var dummy = new SpeechSynthesisUtterance(" ");
-    dummy.volume = 0;
-    synth.speak(dummy);
-    synth.cancel();
+    try {
+        var dummy = new SpeechSynthesisUtterance(" ");
+        dummy.volume = 0;
+        synth.speak(dummy);
+        synth.cancel();
+    } catch(e) { console.log("Erro ao despertar TTS"); }
 }
 
 // Carregar vozes com fallback para Android e browsers antigos
 function carregarVozes(){
+    if(!synth) {
+        statusTxt.innerText = "TTS não suportado neste navegador.";
+        vSelect.innerHTML = "<option>Indisponível</option>";
+        return;
+    }
     var tentar = setInterval(function(){
         var novasVozes = synth.getVoices();
         if(novasVozes.length > 0){
@@ -81,7 +39,8 @@ function carregarVozes(){
     },200);
 }
 
-if(synth.onvoiceschanged !== undefined){
+// Correção do erro: verifica se synth existe antes de acessar onvoiceschanged
+if(synth && synth.onvoiceschanged !== undefined){
     synth.onvoiceschanged = carregarVozes;
 }
 carregarVozes();
@@ -119,6 +78,7 @@ function falar(){
 
 // Falar usando voz local do dispositivo
 function falarLocal(txt){
+    if(!synth) { statusTxt.innerText="TTS Indisponível"; return; }
     if(vozes.length===0){ statusTxt.innerText="Carregando vozes..."; carregarVozes(); return; }
     synth.cancel();
     var msg = new SpeechSynthesisUtterance(txt);
@@ -135,35 +95,40 @@ function falarLocal(txt){
 // Parar fala atual
 function parar(){ if(synth) synth.cancel(); statusTxt.innerText="Interrompido"; }
 
-// Baixar áudio, só se online
+// Baixar áudio
 function baixarAudio(){
-    if(!navigator.onLine){ return; }
     var txt = document.getElementById("text").value.trim();
     if(!txt){ statusTxt.innerText="Escreve algo primeiro"; return; }
-    var usarGtts = document.getElementById("usarGtts").checked && txt.length<=200;
+    
+    var usarGtts = document.getElementById("usarGtts").checked;
 
-    var url;
-    if(usarGtts){
-        url = "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=pt&q=" + encodeURIComponent(txt);
-    } else {
-        // Comentário: download direto do Android TTS ainda não implementado
-        statusTxt.innerText="Download local do Android TTS ainda não suportado direto. Use Google TTS online.";
+    if(!usarGtts) {
+        statusTxt.innerText = "SO TTS não exporta áudio. Ative 'Google TTS' para baixar.";
         return;
     }
 
+    if(!navigator.onLine){ 
+        statusTxt.innerText = "Offline. Download requer Google TTS (Internet).";
+        return; 
+    }
+
+    if(txt.length > 200) {
+        statusTxt.innerText = "Texto muito longo para o Google TTS (máx 200 carac).";
+        return;
+    }
+
+    var url = "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=pt&q=" + encodeURIComponent(txt);
     var a = document.createElement("a");
     a.href = url;
-    a.download = "TTS - Narrador Pro.mp3";
+    a.target = "_blank";
+    a.download = "narracao.mp3";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    statusTxt.innerText="Download iniciado";
+    statusTxt.innerText="Download solicitado via Google.";
 }
 
 window.onload = function(){
     despertarTTS();
     checarConexao();
-};
-</script>
-</body>
-</html>
+};</script></body></html>
