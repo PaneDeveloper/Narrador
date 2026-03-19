@@ -1,5 +1,15 @@
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Narrador de Texto '-'</title><style>body{background:#1a202c;color:#fff;font-family:Arial,sans-serif;margin:0;padding:15px;}.container{background:#2d3748;max-width:600px;margin:20px auto;padding:20px;border-radius:8px;box-shadow:0 4px 6px rgba(0,0,0,0.3);}h1{font-size:20px;margin-bottom:15px;border-bottom:2px solid #4a5568;padding-bottom:5px;}textarea{width:100%;height:150px;padding:10px;font-size:16px;margin-bottom:15px;border-radius:5px;border:none;resize:none;}.controls{background:#4a5568;padding:10px;border-radius:5px;margin-bottom:15px;}label{display:block;font-size:12px;font-weight:bold;margin-bottom:5px;}select,input[type=range]{width:100%;margin-bottom:10px;}.btn{display:block;width:100%;padding:15px;font-size:16px;font-weight:bold;text-align:center;border:none;border-radius:5px;cursor:pointer;margin-bottom:10px;}.btn-play{background:#3182ce;color:white;}.btn-stop{background:#e53e3e;color:white;}.btn-download{background:#38a169;color:white;}.btn-download.disabled{background:#000;cursor:not-allowed;}#status{text-align:center;font-size:12px;color:#a0aec0;margin-top:10px;}</style></head><body><div class="container"><h1>Narrador Local (Android TTS Padrão)</h1><textarea id="text" placeholder="Escreva algo para o narrador falar..."></textarea>
-<div class="controls"><!-- Checkbox para ativar Google TTS --><label><input type="checkbox" id="usarGtts"> Usar o Google TTS pra Download do Arquivo</label><!-- Seleção de vozes --><label>Voz do dispositivo:</label><select id="voice"><option value="">Aguardando sistema...</option></select><label>Velocidade</label><input type="range" id="rate" min="0.5" max="2" step="0.1" value="1"><label>Tom</label><input type="range" id="pitch" min="0" max="2" step="0.1" value="1"></div>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Narrador de Texto '-'</title><style>body{background:#1a202c;color:#fff;font-family:Arial,sans-serif;margin:0;padding:15px;}.container{background:#2d3748;max-width:600px;margin:20px auto;padding:20px;border-radius:8px;box-shadow:0 4px 6px rgba(0,0,0,0.3);}h1{font-size:20px;margin-bottom:15px;border-bottom:2px solid #4a5568;padding-bottom:5px;}textarea{width:100%;height:150px;padding:10px;font-size:16px;margin-bottom:15px;border-radius:5px;border:none;resize:none;}.controls{background:#4a5568;padding:10px;border-radius:5px;margin-bottom:15px;}label{display:block;font-size:12px;font-weight:bold;margin-bottom:5px;}select,input[type=range]{width:100%;margin-bottom:10px;}.btn{display:block;width:100%;padding:15px;font-size:16px;font-weight:bold;text-align:center;border:none;border-radius:5px;cursor:pointer;margin-bottom:10px;}.btn-play{background:#3182ce;color:white;}.btn-stop{background:#e53e3e;color:white;}.btn-download{background:#38a169;color:white;}.btn-download.disabled{background:#000;cursor:not-allowed;}#status{text-align:center;font-size:12px;color:#a0aec0;margin-top:10px;}</style></head><body>
+
+<!-- 
+    NOTA PARA OS CURIOSOS: 
+    Este código usa um padrão de HTML/JS mais direto e "antigo" propositalmente. 
+    O motivo? Compatibilidade total com dispositivos Android antigos e browsers que 
+    não lidam bem com frameworks pesados. Funciona 100% em browsers novos e sistemas modernos 
+    também, mas garante que até aquele seu celular de guerra não fique na mão! kkk
+-->
+
+<div class="container"><h1>Narrador Local (Android TTS Padrão)</h1><textarea id="text" placeholder="Escreva algo para o narrador falar..."></textarea>
+<div class="controls"><!-- Checkbox para ativar Google TTS --><label><input type="checkbox" id="usarGtts"> Usar o Google TTS pra Download do Arquivo</label><!-- Seleção de vozes --><label>Voz do dispositivo:</label><select id="voice"><option value="">Buscando vozes no sistema...</option></select><label>Velocidade</label><input type="range" id="rate" min="0.5" max="2" step="0.1" value="1"><label>Tom</label><input type="range" id="pitch" min="0" max="2" step="0.1" value="1"></div>
 <!-- Botões de ação --><button class="btn btn-play" onclick="falar()">Falar</button><button class="btn btn-stop" onclick="parar()">Parar</button><button id="btnDownload" class="btn btn-download" onclick="baixarAudio()">Baixar Arquivo</button><div id="status">Iniciando...</div></div>
 <script>
 var synth = window.speechSynthesis;
@@ -9,8 +19,9 @@ var statusTxt = document.getElementById("status");
 var btnDownload = document.getElementById("btnDownload");
 var gravador;
 var pedacosAudio = [];
+var carregouUmaVez = false;
 
-// Função para tentar carregar as vozes repetidamente sem travar
+// Função mestre para carregar as vozes sem travar no loop
 function carregarVozes() {
     if (!synth) {
         statusTxt.innerText = "Erro: API de voz não encontrada.";
@@ -20,36 +31,49 @@ function carregarVozes() {
     var lista = synth.getVoices();
     
     if (lista.length > 0) {
-        vozes = lista;
-        vSelect.innerHTML = "";
-        var encontrouPT = false;
+        // Se a lista mudou ou é a primeira vez, a gente popula o select
+        if (lista.length !== vozes.length || !carregouUmaVez) {
+            vozes = lista;
+            vSelect.innerHTML = "";
+            var encontrouPT = false;
 
-        for (var i = 0; i < vozes.length; i++) {
-            var opt = document.createElement("option");
-            opt.value = i;
-            opt.textContent = vozes[i].name + " (" + vozes[i].lang + ")";
-            
-            // Tenta selecionar automaticamente vozes em Português
-            if (!encontrouPT && (vozes[i].lang.indexOf('pt') === 0)) {
-                opt.selected = true;
-                encontrouPT = true;
+            for (var i = 0; i < vozes.length; i++) {
+                var opt = document.createElement("option");
+                opt.value = i;
+                opt.textContent = vozes[i].name + " (" + vozes[i].lang + ")";
+                
+                // Prioridade total para PT-BR
+                if (!encontrouPT && (vozes[i].lang.indexOf('pt') === 0)) {
+                    opt.selected = true;
+                    encontrouPT = true;
+                }
+                vSelect.appendChild(opt);
             }
-            vSelect.appendChild(opt);
+            statusTxt.innerText = "Vozes prontas: " + vozes.length;
+            carregouUmaVez = true;
         }
-        statusTxt.innerText = "Vozes carregadas: " + vozes.length;
     } else {
-        // Se ainda estiver vazio, tenta "acordar" o motor de voz
-        statusTxt.innerText = "Procurando vozes no Android...";
-        setTimeout(carregarVozes, 300);
+        // Truque do Android: Se as vozes sumirem, a gente "espeta" o sistema de novo
+        statusTxt.innerText = "Sincronizando vozes...";
     }
 }
 
-// Alguns navegadores exigem que se peça a lista várias vezes
+// O pulo do gato: rodar o carregamento em loop curto até dar certo
 if (synth) {
     if (synth.onvoiceschanged !== undefined) {
         synth.onvoiceschanged = carregarVozes;
     }
+    // Tenta carregar na hora e a cada 400ms se estiver vazio
     carregarVozes();
+    var loopVozes = setInterval(function() {
+        if (vozes.length > 0 && carregouUmaVez) {
+            // Se já carregou, diminui a frequência da checagem
+            clearInterval(loopVozes);
+            setInterval(carregarVozes, 2000); 
+        } else {
+            carregarVozes();
+        }
+    }, 400);
 }
 
 function falar() {
@@ -59,7 +83,7 @@ function falar() {
     if (!txt) { statusTxt.innerText = "Digite algo primeiro!"; return; }
 
     if (usarGtts && navigator.onLine && txt.length <= 200) {
-        statusTxt.innerText = "Usando voz do Google...";
+        statusTxt.innerText = "Chamando Google TTS...";
         var url = "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=pt&q=" + encodeURIComponent(txt);
         var audio = new Audio(url);
         audio.play().catch(function() { falarLocal(txt); });
@@ -69,13 +93,16 @@ function falar() {
 }
 
 function falarLocal(txt) {
-    if (!synth || vozes.length === 0) {
-        statusTxt.innerText = "Aguarde: Vozes ainda não carregaram.";
+    if (!synth) return;
+
+    // Se as vozes não apareceram, tenta forçar uma última vez
+    if (vozes.length === 0) {
         carregarVozes();
+        statusTxt.innerText = "Erro: Vozes não disponíveis no momento.";
         return;
     }
 
-    synth.cancel(); // Para qualquer fala anterior
+    synth.cancel(); 
     var msg = new SpeechSynthesisUtterance(txt);
     var vIndex = vSelect.value;
     
@@ -87,12 +114,14 @@ function falarLocal(txt) {
     msg.rate = document.getElementById("rate").value;
     msg.pitch = document.getElementById("pitch").value;
 
-    msg.onstart = function() { statusTxt.innerText = "Falando..."; };
+    msg.onstart = function() { statusTxt.innerText = "Processando áudio..."; };
     msg.onend = function() { 
         statusTxt.innerText = "Fim da fala."; 
-        if (gravador && gravador.state === "recording") gravador.stop();
+        if (gravador && gravador.state === "recording") {
+            setTimeout(function(){ gravador.stop(); }, 500); // Delay pra não cortar o final
+        }
     };
-    msg.onerror = function(e) { statusTxt.innerText = "Erro no TTS: " + e.error; };
+    msg.onerror = function(e) { statusTxt.innerText = "Erro no motor local: " + e.error; };
 
     synth.speak(msg);
 }
@@ -109,15 +138,17 @@ async function baixarAudio() {
 
     var usarGtts = document.getElementById("usarGtts").checked;
 
-    // Se estiver online e usar Google, baixa direto o MP3
     if (usarGtts && navigator.onLine && txt.length <= 200) {
         var url = "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=pt&q=" + encodeURIComponent(txt);
-        window.open(url, '_blank');
+        var link = document.createElement("a");
+        link.href = url;
+        link.target = "_blank";
+        link.download = "audio_google.mp3";
+        link.click();
         return;
     }
 
-    // Se for voz local, grava o áudio do dispositivo (precisa de permissão de microfone)
-    statusTxt.innerText = "Iniciando gravação... Aceite o microfone.";
+    statusTxt.innerText = "Gravando voz local... Fique em silêncio!";
     try {
         var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         gravador = new MediaRecorder(stream);
@@ -132,18 +163,19 @@ async function baixarAudio() {
             a.download = "narracao_local.webm";
             a.click();
             stream.getTracks().forEach(t => t.stop());
-            statusTxt.innerText = "Arquivo gerado (WebM).";
+            statusTxt.innerText = "WebM gerado com sucesso!";
         };
 
         gravador.start();
         falarLocal(txt);
     } catch (err) {
-        statusTxt.innerText = "Erro: Microfone necessário para capturar voz do sistema.";
+        statusTxt.innerText = "Erro: Preciso do microfone para gravar o som local.";
     }
 }
 
+// Acorda o motor de voz logo de cara
 window.onload = function() {
-    // Tenta forçar o carregamento inicial
+    if (synth) synth.cancel();
     setTimeout(carregarVozes, 500);
 };
-</script></body></html>
+</script></body></html>            
