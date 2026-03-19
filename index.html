@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Narrador de Texto '-'</title><style>body{background:#1a202c;color:#fff;font-family:Arial,sans-serif;margin:0;padding:15px;}.container{background:#2d3748;max-width:600px;margin:20px auto;padding:20px;border-radius:8px;box-shadow:0 4px 6px rgba(0,0,0,0.3);}h1{font-size:20px;margin-bottom:15px;border-bottom:2px solid #4a5568;padding-bottom:5px;}textarea{width:100%;height:150px;padding:10px;font-size:16px;margin-bottom:15px;border-radius:5px;border:none;resize:none;}.controls{background:#4a5568;padding:10px;border-radius:5px;margin-bottom:15px;}label{display:block;font-size:12px;font-weight:bold;margin-bottom:5px;}select,input[type=range]{width:100%;margin-bottom:10px;}.btn{display:block;width:100%;padding:15px;font-size:16px;font-weight:bold;text-align:center;border:none;border-radius:5px;cursor:pointer;margin-bottom:10px;}.btn-play{background:#3182ce;color:white;}.btn-stop{background:#e53e3e;color:white;}.btn-download{background:#38a169;color:white;}.btn-download.disabled{background:#000;cursor:not-allowed;}#status{text-align:center;font-size:12px;color:#a0aec0;margin-top:10px;}</style></head><body><div class="container"><h1>Narrador Local (Android TTS Padrão)</h1><textarea id="text" placeholder="Escreva algo para o narrador falar..."></textarea>
-<div class="controls"><!-- Checkbox para ativar Google TTS, opcional --><label><input type="checkbox" id="usarGtts"> Usar o Google TTS pra Download do Arquivo</label><!-- Seleção de vozes do dispositivo, padrão --><label>Voz do dispositivo:</label><select id="voice"><option>Carregando vozes...</option></select><label>Velocidade</label><input type="range" id="rate" min="0.5" max="2" step="0.1" value="1"><label>Tom</label><input type="range" id="pitch" min="0" max="2" step="0.1" value="1"></div>
-<!-- Botões de ação --><button class="btn btn-play" onclick="falar()">Falar</button><button class="btn btn-stop" onclick="parar()">Parar</button><!-- Download inteligente --><button id="btnDownload" class="btn btn-download" onclick="baixarAudio()">Baixar Arquivo</button><div id="status">Iniciando...</div></div>
+<div class="controls"><!-- Checkbox para ativar Google TTS --><label><input type="checkbox" id="usarGtts"> Usar o Google TTS pra Download do Arquivo</label><!-- Seleção de vozes --><label>Voz do dispositivo:</label><select id="voice"><option>Carregando vozes...</option></select><label>Velocidade</label><input type="range" id="rate" min="0.5" max="2" step="0.1" value="1"><label>Tom</label><input type="range" id="pitch" min="0" max="2" step="0.1" value="1"></div>
+<!-- Botões de ação --><button class="btn btn-play" onclick="falar()">Falar</button><button class="btn btn-stop" onclick="parar()">Parar</button><button id="btnDownload" class="btn btn-download" onclick="baixarAudio()">Baixar Arquivo</button><div id="status">Iniciando...</div></div>
 <script>
 var synth = window.speechSynthesis;
 var vozes = [];
@@ -9,15 +9,15 @@ var statusTxt = document.getElementById("status");
 var btnDownload = document.getElementById("btnDownload");
 var gravador;
 var pedacosAudio = [];
+var tentativasCarga = 0;
 
 function despertarTTS(){
     if(!synth) return;
     try {
-        var dummy = new SpeechSynthesisUtterance(" ");
-        dummy.volume = 0;
-        synth.speak(dummy);
         synth.cancel();
-    } catch(e) { console.log("Erro ao despertar TTS"); }
+        var dummy = new SpeechSynthesisUtterance("");
+        synth.speak(dummy);
+    } catch(e) { console.log("Erro ao despertar"); }
 }
 
 function carregarVozes(){
@@ -26,35 +26,53 @@ function carregarVozes(){
         vSelect.innerHTML = "<option>Indisponível</option>";
         return;
     }
-    var tentar = setInterval(function(){
-        var novasVozes = synth.getVoices();
-        if(novasVozes.length > 0){
-            vozes = novasVozes;
-            vSelect.innerHTML = "";
-            for(var i=0;i<vozes.length;i++){
-                var opt = document.createElement("option");
-                opt.value = i;
-                opt.textContent = vozes[i].name + " [" + vozes[i].lang + "]";
-                if(vozes[i].lang.indexOf('pt')===0){ opt.selected = true; }
-                vSelect.appendChild(opt);
-            }
-            statusTxt.innerText = "Vozes prontas ("+vozes.length+")";
-            clearInterval(tentar);
+    
+    var novasVozes = synth.getVoices();
+    
+    if(novasVozes.length > 0){
+        vozes = novasVozes;
+        vSelect.innerHTML = "";
+        for(var i=0; i<vozes.length; i++){
+            var opt = document.createElement("option");
+            opt.value = i;
+            opt.textContent = vozes[i].name + " [" + vozes[i].lang + "]";
+            // Auto-seleciona PT-BR ou PT
+            if(vozes[i].lang.indexOf('pt') === 0){ opt.selected = true; }
+            vSelect.appendChild(opt);
         }
-    },200);
+        statusTxt.innerText = "Vozes prontas (" + vozes.length + ")";
+        tentativasCarga = 0;
+    } else {
+        tentativasCarga++;
+        statusTxt.innerText = "Carregando vozes... (" + tentativasCarga + ")";
+        // Se falhar muito, tenta forçar o evento de novo
+        if(tentativasCarga > 10) {
+            despertarTTS();
+        }
+    }
 }
 
-if(synth && typeof synth.addEventListener === 'function'){
-    synth.onvoiceschanged = carregarVozes;
+// Configura listeners de voz
+if (synth) {
+    if (synth.onvoiceschanged !== undefined) {
+        synth.onvoiceschanged = carregarVozes;
+    }
+    // Tenta carregar imediatamente e em intervalos para garantir
+    carregarVozes();
+    var intervaloVozes = setInterval(function() {
+        if (vozes.length > 0) {
+            clearInterval(intervaloVozes);
+        } else {
+            carregarVozes();
+        }
+    }, 500);
 }
-carregarVozes();
 
 function checarConexao(){
     if(navigator.onLine){
         btnDownload.classList.remove("disabled");
         btnDownload.disabled = false;
     } else {
-        // Se estiver offline, o download só funciona se tivermos suporte a gravação local
         if(!window.MediaRecorder) {
             btnDownload.classList.add("disabled");
             btnDownload.disabled = true;
@@ -86,7 +104,10 @@ function falarLocal(txt){
     synth.cancel();
     var msg = new SpeechSynthesisUtterance(txt);
     var vIndex = vSelect.value;
-    if(vozes[vIndex]){ msg.voice = vozes[vIndex]; msg.lang = vozes[vIndex].lang; }
+    if(vozes[vIndex]){ 
+        msg.voice = vozes[vIndex]; 
+        msg.lang = vozes[vIndex].lang; 
+    }
     msg.rate = document.getElementById("rate").value;
     msg.pitch = document.getElementById("pitch").value;
     msg.onstart = function(){ statusTxt.innerText="Voz local ativa..."; };
@@ -94,12 +115,13 @@ function falarLocal(txt){
         statusTxt.innerText="Pronto."; 
         if(gravador && gravador.state === "recording") gravador.stop();
     };
+    msg.onerror = function(e){ statusTxt.innerText="Erro na fala: " + e.error; };
     synth.speak(msg);
 }
 
 function parar(){ 
     if(synth) synth.cancel(); 
-    if(gravador) gravador.stop();
+    if(gravador && gravador.state === "recording") gravador.stop();
     statusTxt.innerText="Interrompido."; 
 }
 
@@ -122,14 +144,13 @@ async function baixarAudio(){
         return;
     }
 
-    // GAMBIARRA PRO: Gravação de áudio do sistema/microfone para exportar voz local
-    statusTxt.innerText = "Gravando voz local... Fale ou aguarde.";
+    statusTxt.innerText = "Gravando voz local... (Ative o microfone)";
     try {
         var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         gravador = new MediaRecorder(stream);
         pedacosAudio = [];
 
-        gravador.ondataavailable = function(e) { pedacosAudio.push(e.data); };
+        gravador.ondataavailable = function(e) { if(e.data.size > 0) pedacosAudio.push(e.data); };
         gravador.onstop = function() {
             var blob = new Blob(pedacosAudio, { type: 'audio/webm' });
             var url = URL.createObjectURL(blob);
@@ -137,14 +158,14 @@ async function baixarAudio(){
             a.href = url;
             a.download = "voz_local.webm";
             a.click();
-            stream.getTracks().forEach(t => t.stop());
+            stream.getTracks().forEach(function(t){ t.stop(); });
             statusTxt.innerText = "Download concluído (WebM)";
         };
 
         gravador.start();
         falarLocal(txt);
     } catch(err) {
-        statusTxt.innerText = "Erro: Ative o microfone para gravar a voz local.";
+        statusTxt.innerText = "Erro: Necessário microfone para capturar voz local.";
     }
 }
 
